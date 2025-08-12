@@ -103,6 +103,11 @@ $wgLocaltimezone = "UTC";
 ## be publicly accessible from the web.
 #$wgCacheDirectory = "$IP/cache";
 
+
+## Import without prefix -----------------------------------------------------------------------------------------------------
+$wgImportUseInterwikiPrefix = false;
+
+
 $wgSecretKey = "c139d76312c4b59873e40efab14d45034dbee77b4f8b39e2b656706a7e217657";
 
 # Changing this will log out all existing sessions.
@@ -184,6 +189,6 @@ $wgHooks['SkinTemplateNavigation::Universal'][] = function ( $skinTemplate, &$li
     return true;
 };
 
-$wgImportUseInterwikiPrefix = false;
+
 
 
