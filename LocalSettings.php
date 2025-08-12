@@ -184,5 +184,6 @@ $wgHooks['SkinTemplateNavigation::Universal'][] = function ( $skinTemplate, &$li
     return true;
 };
 
+$wgImportUseInterwikiPrefix = false;
 
 
