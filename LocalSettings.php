@@ -167,4 +167,21 @@ wfLoadExtension( 'WikiEditor' );
 
 # End of automatically generated settings.
 # Add more configuration options below.
+$wgHooks['SkinTemplateNavigation::Universal'][] = function ( $skinTemplate, &$links ) {
+    $title = $skinTemplate->getTitle();
+
+    if ( $title->isMainPage() ) {
+        $user = $skinTemplate->getUser();
+        $allowedUserName = 'SuperCode111';  // Your username here
+
+        if ( $user->getName() !== $allowedUserName ) {
+            // Remove Edit tab
+            unset( $links['actions']['edit'] );
+            // Remove Discussion (Talk) tab
+            unset( $links['namespaces'][1] ); // namespace 1 = Talk
+        }
+    }
+    return true;
+};
+
 
