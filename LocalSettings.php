@@ -185,3 +185,4 @@ $wgHooks['SkinTemplateNavigation::Universal'][] = function ( $skinTemplate, &$li
 };
 
 
+$wgImportUseInterwikiPrefix = false;
