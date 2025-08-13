@@ -106,6 +106,7 @@ $wgLocaltimezone = "UTC";
 
 ## Import without prefix -----------------------------------------------------------------------------------------------------
 $wgImportUseInterwikiPrefix = false;
+$wgMaxUploadSize = 2147483648;
 
 
 $wgSecretKey = "c139d76312c4b59873e40efab14d45034dbee77b4f8b39e2b656706a7e217657";
