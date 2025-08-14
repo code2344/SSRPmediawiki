@@ -15,12 +15,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y curl jq python3
 
-      - name: Fetch templates/modules and generate XML
+      - name: Prepare XML file
         run: |
           mkdir -p wiki_resources
-          echo '<?xml version="1.0" encoding="UTF-8"?>
-<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">' > wiki_resources/fandom_templates.xml
+          cat <<'EOF' > wiki_resources/fandom_templates.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">
+EOF
 
+      - name: Fetch templates/modules
+        run: |
           cat <<'EOF' > pagelist.txt
 Template:!!
 Template:!!/doc
@@ -198,16 +202,25 @@ EOF
 
           while IFS= read -r page; do
             echo "Fetching $page"
-            content=$(curl -s "https://visceraleds-scp-site-roleplay.fandom.com/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$page'''))")" \
+            # Determine namespace: templates = 10, modules = 828
+            ns=10
+            if [[ "$page" == Module:* ]]; then ns=828; fi
+
+            # URL encode page name
+            encoded_page=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$page")
+
+            # Fetch content from Fandom API
+            content=$(curl -s "https://visceraleds-scp-site-roleplay.fandom.com/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=$encoded_page" \
                       | jq -r '.query.pages[]?.revisions[0]["*"] // .query.pages[]?.revisions[0].slots.main["*"] // ""')
 
             # Escape XML special characters
             content_escaped=$(echo "$content" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
 
+            # Append to XML
             cat >> wiki_resources/fandom_templates.xml <<EOF
   <page>
     <title>$page</title>
-    <ns>10</ns>
+    <ns>$ns</ns>
     <revision>
       <text xml:space="preserve">$content_escaped</text>
     </revision>
@@ -215,6 +228,7 @@ EOF
 EOF
           done < pagelist.txt
 
+          # Close XML
           echo "</mediawiki>" >> wiki_resources/fandom_templates.xml
 
       - name: Upload XML artifact
