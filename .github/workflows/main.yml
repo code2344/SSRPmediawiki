@@ -8,50 +8,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y curl jq python3 python3-pip
+        run: sudo apt-get update && sudo apt-get install -y curl jq python3
 
-      - name: Prepare XML file
-        run: |
-          mkdir -p wiki_resources
-          echo '<?xml version="1.0" encoding="UTF-8"?>' > wiki_resources/fandom_templates.xml
-          echo '<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">' >> wiki_resources/fandom_templates.xml
+      - name: Make script executable
+        run: chmod +x fetch_templates.sh
 
-      - name: Fetch templates/modules
-        run: |
-          while IFS= read -r page; do
-            echo "Fetching $page"
-            # Determine namespace (Module=828, Template=10)
-            ns=10
-            if [[ "$page" == Module:* ]]; then ns=828; fi
-
-            # URL encode page title
-            encoded_page=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$page")
-
-            # Fetch content from Fandom API
-            content=$(curl -s "https://visceraleds-scp-site-roleplay.fandom.com/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=$encoded_page" \
-                      | jq -r '.query.pages[]?.revisions[0]["*"] // .query.pages[]?.revisions[0].slots.main["*"] // ""')
-
-            # Escape XML special characters
-            content_escaped=$(echo "$content" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
-
-            # Append page to XML using <<-EOF to allow indentation
-            cat >> wiki_resources/fandom_templates.xml <<-EOF
-<page>
-  <title>$page</title>
-  <ns>$ns</ns>
-  <revision>
-    <text xml:space="preserve">$content_escaped</text>
-  </revision>
-</page>
-EOF
-          done < pagelist.txt
-
-      - name: Close XML
-        run: echo '</mediawiki>' >> wiki_resources/fandom_templates.xml
+      - name: Run fetch script
+        run: ./fetch_templates.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
