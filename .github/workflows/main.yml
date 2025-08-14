@@ -20,7 +20,7 @@ jobs:
         run: ./fetch_templates.sh
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: fandom-templates
           path: wiki_resources/fandom_templates.xml
