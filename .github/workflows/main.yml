@@ -18,7 +18,7 @@ jobs:
       - name: Prepare XML file
         run: |
           mkdir -p wiki_resources
-          cat <<'EOF' > wiki_resources/fandom_templates.xml
+          cat <<'EOF'>wiki_resources/fandom_templates.xml
 <?xml version="1.0" encoding="UTF-8"?>
 <mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">
 EOF
