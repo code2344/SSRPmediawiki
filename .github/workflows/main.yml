@@ -1,222 +1,41 @@
-name: Fetch Fandom Templates and Modules to XML
+name: Fetch Fandom Templates and Modules
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # manual trigger
 
 jobs:
   fetch:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl jq python3
+        run: sudo apt-get update && sudo apt-get install -y curl jq python3 python3-pip
 
       - name: Prepare XML file
         run: |
           mkdir -p wiki_resources
-          cat <<'EOF'>wiki_resources/fandom_templates.xml
-<?xml version="1.0" encoding="UTF-8"?>
-<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">
-EOF
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > wiki_resources/fandom_templates.xml
+          echo '<mediawiki xmlns="http://www.mediawiki.org/xml/export-0.10/" version="0.10" xml:lang="en">' >> wiki_resources/fandom_templates.xml
 
       - name: Fetch templates/modules
         run: |
-          cat <<'EOF' > pagelist.txt
-Template:!!
-Template:!!/doc
-Template:!-
-Template:!-/doc
-Template:(
-Template:((
-Template:((/doc
-Template:(/doc
-Template:)
-Template:))
-Template:))/doc
-Template:)/doc
-Template:*
-Template:*/doc
-Template:-
-Template:=
-Template:=/doc
-Template:About
-Template:Album
-Template:Album/doc
-Template:AnomalousEffects
-Template:Book
-Template:Book/doc
-Template:CC-BY-SA
-Template:CC-BY-SA/doc
-Template:Cast
-Template:Cast/doc
-Template:Character
-Template:Character/doc
-Template:Characters
-Template:Cite web/doc
-Template:Class D
-Template:Clear
-Template:Clear/doc
-Template:Cols
-Template:Cols/doc
-Template:ConstructionNotice
-Template:Delete
-Template:Delete/doc
-Template:Developer
-Template:Developer/doc
-Template:Dialogue
-Template:Dialogue/doc
-Template:Disambiguation
-Template:Disambiguation/doc
-Template:DiscordIntegrator
-Template:Documentation
-Template:Documentation/doc
-Template:Editlink
-Template:Editlink/doc
-Template:Episode
-Template:Episode/doc
-Template:Event
-Template:Event/doc
-Template:Fairuse
-Template:Fairuse/doc
-Template:Film
-Template:Film/doc
-Template:For
-Template:Friendly
-Template:From Wikimedia
-Template:From Wikimedia/doc
-Template:Further
-Template:GFDL
-Template:GFDL/doc
-Template:Game
-Template:Game/doc
-Template:GameMechanicHeader
-Template:Gamegfx
-Template:Games
-Template:Games/doc
-Template:Hatnote
-Template:Hatnote/doc
-Template:Header
-Template:Headerblack
-Template:HistoricalImagery
-Template:Hostile
-Template:Item
-Template:Item/doc
-Template:ItemDescription
-Template:ItemDescriptionHeader
-Template:ItemExtraInformation
-Template:LGPL
-Template:LGPL/doc
-Template:LicenseBox
-Template:LicenseBox/doc
-Template:Location
-Template:Location/doc
-Template:LocationDescription
-Template:LocationDescriptionHeader
-Template:MIT
-Template:MIT/doc
-Template:Main
-Template:MessageBox
-Template:MessageBox/doc
-Template:Namespace
-Template:Namespace/doc
-Template:Navbox
-Template:Navbox/doc
-Template:Neutral
-Template:NewestPatch
-Template:Nolicense
-Template:Nolicense/doc
-Template:Other free
-Template:Other free/doc
-Template:PD
-Template:PD/doc
-Template:PatchScroll
-Template:Permission
-Template:Permission/doc
-Template:Publisher
-Template:Publisher/doc
-Template:Quest
-Template:Quest/doc
-Template:Quote
-Template:Quote/doc
-Template:SCPDescription
-Template:SCPDescriptionHeader
-Template:SCPRecontainment
-Template:SCP infobox
-Template:SCP infobox/doc
-Template:Scroll
-Template:Season
-Template:Season/doc
-Template:See also
-Template:Self
-Template:Self/doc
-Template:Series
-Template:Series/doc
-Template:Space
-Template:Space/doc
-Template:StructuredQuote
-Template:Stub
-Template:Stub/doc
-Template:T
-Template:T/doc
-Template:TeamDescription
-Template:TeamDescriptionHeader
-Template:Tocright
-Template:Tocright/doc
-Template:Topic
-Template:Topic/doc
-Template:Trim
-Template:Trim/doc
-Template:UpdateLog
-Template:Uploadlink
-Template:Uploadlink/doc
-Template:Username
-Template:Weapon
-Template:WeaponDescription
-Template:WeaponDescriptionHeader
-Template:WeaponsHeader
-Template:ZZZ JaydenN 1650 Sandbox Navigation Box
-Template:ZZZ Text stroke
-Module:Dialogue
-Module:Dialogue/doc
-Module:Hatnote
-Module:Hatnote/doc
-Module:Mbox
-Module:Mbox/data
-Module:Mbox/data/doc
-Module:Mbox/doc
-Module:Namespace detect
-Module:Namespace detect/config
-Module:Namespace detect/config/doc
-Module:Namespace detect/data
-Module:Namespace detect/data/doc
-Module:Namespace detect/doc
-Module:Navbox
-Module:Navbox/doc
-Module:Quote
-Module:Quote/doc
-EOF
-
           while IFS= read -r page; do
             echo "Fetching $page"
-            # Determine namespace: templates = 10, modules = 828
+            # Determine namespace (Module=828, Template=10)
             ns=10
             if [[ "$page" == Module:* ]]; then ns=828; fi
 
-            # URL encode page name
             encoded_page=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$page")
-
-            # Fetch content from Fandom API
             content=$(curl -s "https://visceraleds-scp-site-roleplay.fandom.com/api.php?action=query&prop=revisions&rvprop=content&format=json&titles=$encoded_page" \
                       | jq -r '.query.pages[]?.revisions[0]["*"] // .query.pages[]?.revisions[0].slots.main["*"] // ""')
 
-            # Escape XML special characters
+            # Escape XML special chars
             content_escaped=$(echo "$content" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
 
-            # Append to XML
+            # Append page to XML
             cat >> wiki_resources/fandom_templates.xml <<EOF
   <page>
     <title>$page</title>
@@ -228,11 +47,11 @@ EOF
 EOF
           done < pagelist.txt
 
-          # Close XML
-          echo "</mediawiki>" >> wiki_resources/fandom_templates.xml
+      - name: Close XML
+        run: echo '</mediawiki>' >> wiki_resources/fandom_templates.xml
 
-      - name: Upload XML artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: fandom-templates-xml
+          name: fandom-templates
           path: wiki_resources/fandom_templates.xml
